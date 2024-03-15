@@ -17,7 +17,7 @@ import os
 import glob
 import argparse
 import pandas as pd
-import tensorflow as tf
+# import tensorflow as tf
 import numpy as np
 import cv2
 import layoutparser as lp
@@ -233,32 +233,32 @@ def scannedPageOCR(pdf_path):
                 horiz_boxes.append([x_h, y_h, x_h + width_h, y_h + height_h])
                 vert_boxes.append([x_v, y_v, x_v + width_v, y_v + height_v])
 
-              horiz_out = tf.image.non_max_suppression(
-                  horiz_boxes,
-                  probabilities,
-                  max_output_size=1000,
-                  iou_threshold=0.1,
-                  score_threshold=float('-inf'),
-                  name=None
-              )
-              horiz_lines = np.sort(np.array(horiz_out))
+              # horiz_out = tf.image.non_max_suppression(
+              #     horiz_boxes,
+              #     probabilities,
+              #     max_output_size=1000,
+              #     iou_threshold=0.1,
+              #     score_threshold=float('-inf'),
+              #     name=None
+              # )
+              # horiz_lines = np.sort(np.array(horiz_out))
 
-              vert_out = tf.image.non_max_suppression(
-                  vert_boxes,
-                  probabilities,
-                  max_output_size=1000,
-                  iou_threshold=0.1,
-                  score_threshold=float('-inf'),
-                  name=None
-              )
-              vert_lines = np.sort(np.array(vert_out))
+              # vert_out = tf.image.non_max_suppression(
+              #     vert_boxes,
+              #     probabilities,
+              #     max_output_size=1000,
+              #     iou_threshold=0.1,
+              #     score_threshold=float('-inf'),
+              #     name=None
+              # )
+              # vert_lines = np.sort(np.array(vert_out))
 
-              out_array = [["" for i in range(len(vert_lines))] for j in range(len(horiz_lines))]
-              unordered_boxes = []
+              # out_array = [["" for i in range(len(vert_lines))] for j in range(len(horiz_lines))]
+              # unordered_boxes = []
 
-              for i in vert_lines:
-                unordered_boxes.append(vert_boxes[i][0])
-              ordered_boxes = np.argsort(unordered_boxes)
+              # for i in vert_lines:
+              #   unordered_boxes.append(vert_boxes[i][0])
+              # ordered_boxes = np.argsort(unordered_boxes)
 
               def intersection(box_1, box_2):
                 return [box_2[0], box_1[1], box_2[2], box_1[3]]
@@ -275,25 +275,25 @@ def scannedPageOCR(pdf_path):
                 box_2_area = abs((box_2[2] - box_2[0]) * (box_2[3] - box_2[1]))
                 return inter / float(box_1_area + box_2_area - inter)
 
-              for i in range(len(horiz_lines)):
-                for j in range(len(vert_lines)):
-                  resultant = intersection(horiz_boxes[horiz_lines[i]], vert_boxes[vert_lines[ordered_boxes[j]]])
-                  for b in range(len(boxes)):
-                    the_box = [boxes[b][0][0], boxes[b][0][1], boxes[b][2][0], boxes[b][2][1]]
-                    if (iou(resultant, the_box) > 0.1):
-                      out_array[i][j] = texts[b]
+              # for i in range(len(horiz_lines)):
+              #   for j in range(len(vert_lines)):
+              #     resultant = intersection(horiz_boxes[horiz_lines[i]], vert_boxes[vert_lines[ordered_boxes[j]]])
+              #     for b in range(len(boxes)):
+              #       the_box = [boxes[b][0][0], boxes[b][0][1], boxes[b][2][0], boxes[b][2][1]]
+              #       if (iou(resultant, the_box) > 0.1):
+              #         out_array[i][j] = texts[b]
 
-              out_array = np.array(out_array)
-              table = tuple(map(tuple, out_array))  # Convert to hashable tuple
-              if table not in extracted_tables:  # Check if table is unique
-                extracted_tables.add(table)
-                page_df = pd.DataFrame(out_array)
-                all_tables_df_4 = pd.concat([all_tables_df_4, page_df], ignore_index=True)
-                table_count += 1
+              # out_array = np.array(out_array)
+              # table = tuple(map(tuple, out_array))  # Convert to hashable tuple
+              # if table not in extracted_tables:  # Check if table is unique
+              #   extracted_tables.add(table)
+              #   page_df = pd.DataFrame(out_array)
+              #   all_tables_df_4 = pd.concat([all_tables_df_4, page_df], ignore_index=True)
+              #   table_count += 1
 
     text_content += "\n"
     output_string = StringIO()
-    all_tables_df_4.to_csv(output_string, sep='\t', index=False)
+    # all_tables_df_4.to_csv(output_string, sep='\t', index=False)
     formatted_dataframe_string = output_string.getvalue()
     text_content += formatted_dataframe_string
 

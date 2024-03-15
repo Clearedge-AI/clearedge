@@ -11,8 +11,8 @@ pymupdf = "^1.23.26"
 tqdm = "^4.66.2"
 requests = "^2.31.0"
 layoutparser = "^0.3.4"
-paddlepaddle = "^2.6.0"
 paddleocr = { path = "./PaddleOCR" }
+paddlepaddle = "^2.6.0"
 
 
 
