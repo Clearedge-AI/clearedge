@@ -7,6 +7,9 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
+pymupdf = "^1.23.26"
+tqdm = "^4.66.2"
+requests = "^2.31.0"
 
 
 [build-system]
