@@ -1,9 +1,12 @@
 [tool.poetry]
 name = "clearedge"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
-authors = ["Kilim Choi <choikilim1202@gmail.com>"]
+authors = ["Clearedge"]
 readme = "README.md"
+
+[tool.poetry.scripts]
+install-deps = "install_deps:main"
 
 [tool.poetry.dependencies]
 tensorflow-io-gcs-filesystem = { version = "*", python = ">=3.10.12,<3.12" }
@@ -11,13 +14,9 @@ python = "^3.10.12"
 pymupdf = "^1.20.2"
 tqdm = "^4.66.2"
 requests = "^2.31.0"
-layoutparser = "^0.3.4"
-paddleocr = "^2.7.0.3"
-paddlepaddle = "^2.6.0"
 tensorflow = "^2.8.0"
-pdf2image = "^1.17.0"
 pytesseract = "^0.3.10"
-
+validators = "^0.22.0"
 
 [build-system]
 requires = ["poetry-core"]
