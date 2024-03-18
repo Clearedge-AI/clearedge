@@ -146,21 +146,28 @@ class ProcessPDF:
 
     return images
 
-  def group_texts_by_bbox(self, text_items):
+  def get_extreme_bboxes(self, bboxes):
+    top_left = min(box[0] for box in bboxes)
+    top_right = max(box[1] for box in bboxes)
+    bottom_right = max(box[2] for box in bboxes)
+    bottom_left = min(box[3] for box in bboxes)
+
+    return top_left, top_right, bottom_right, bottom_left
+
+  def group_texts_by_bbox(self, text_items, page_no):
     # Sort the bounding box data by the y-coordinate of the top-left corner
     y_threshold = 20
     x_threshold = 5
     text_items.sort(key=lambda x: x[0][0][1])
-
     grouped_texts = []
     current_group = []
     chunks = []
     prev_y = None
-    for bbox, text, conf in text_items:
+    for bbox, text, _ in text_items:
       x, y = bbox[0]
 
       if prev_y is None or y - prev_y <= y_threshold:
-        current_group.append((x, text, y))
+        current_group.append((x, text, y, bbox))
       else:
         # Sort the current group by x-coordinate and join the texts
         current_group.sort(key=lambda x: x[0])
@@ -173,16 +180,41 @@ class ProcessPDF:
             current_line.append(current_group[i])
           else:
             sorted_data = sorted(current_line, key=lambda x: x[2])
-            grouped_lines.append(' '.join([item[1] for item in sorted_data]))
+            chunk_text = ' '.join([item[1] for item in sorted_data])
+            boxes = [bbox[3] for bbox in sorted_data]
+            top_left, top_right, bottom_right, bottom_left = self.get_extreme_bboxes(boxes)
+
+            chunks.append(
+              Chunk(
+                text=chunk_text,
+                metadata=Metadata(
+                  page_no=page_no,
+                  bbox=[top_left, top_right, bottom_right, bottom_left]
+                )
+              )
+            )
+            grouped_lines.append(chunk_text)
             current_line = [current_group[i]]
           prev_x = current_group[i][0]
         sorted_data = sorted(current_line, key=lambda x: x[2])
-        grouped_lines.append(' '.join([item[1] for item in sorted_data]))
+        chunk_text = ' '.join([item[1] for item in sorted_data])
+        boxes = [bbox[3] for bbox in sorted_data]
+        top_left, top_right, bottom_right, bottom_left = self.get_extreme_bboxes(boxes)
+
+        chunks.append(
+          Chunk(
+            text=chunk_text,
+            metadata=Metadata(
+              page_no=page_no,
+              bbox=[top_left, top_right, bottom_right, bottom_left]
+            )
+          )
+        )
+        grouped_lines.append(chunk_text)
         grouped_texts.extend(grouped_lines)
-        current_group = [(x, text, y)]
+        current_group = [(x, text, y, bbox)]
 
       prev_y = y
-
     # Process the last group
     if current_group:
       current_group.sort(key=lambda x: x[0])
@@ -195,25 +227,49 @@ class ProcessPDF:
           current_line.append(current_group[i])
         else:
           sorted_data = sorted(current_line, key=lambda x: x[2])
-          grouped_lines.append(' '.join([item[1] for item in sorted_data]))
+          chunk_text = ' '.join([item[1] for item in sorted_data])
+          boxes = [bbox[3] for bbox in sorted_data]
+          top_left, top_right, bottom_right, bottom_left = self.get_extreme_bboxes(boxes)
+          chunks.append(
+            Chunk(
+              text=chunk_text,
+              metadata=Metadata(
+                page_no=page_no,
+                bbox=[top_left, top_right, bottom_right, bottom_left]
+              )
+            )
+          )
+          grouped_lines.append(chunk_text)
           current_line = [current_group[i]]
         prev_x = current_group[i][0]
 
       sorted_data = sorted(current_line, key=lambda x: x[2])
-      grouped_lines.append(' '.join([item[1] for item in sorted_data]))
+      chunk_text = ' '.join([item[1] for item in sorted_data])
+      boxes = [bbox[3] for bbox in sorted_data]
+      top_left, top_right, bottom_right, bottom_left = self.get_extreme_bboxes(boxes)
+
+      chunks.append(
+        Chunk(
+          text=chunk_text,
+          metadata=Metadata(
+            page_no=page_no,
+            bbox=[top_left, top_right, bottom_right, bottom_left]
+          )
+        )
+      )
+      grouped_lines.append(chunk_text)
 
       grouped_texts.extend(grouped_lines)
-    return grouped_texts
+
+    return chunks
 
   def process_file_with_ocr(self, doc):
     # convert doc to images
     images = self.convert_doc_to_image(doc)
-    chunks = []
+    result = []
     for page_no, image_path in enumerate(images):
-      full_text = ""
       img = cv2.imread(image_path)
       ocr_result, _ = self.ocr(img)
-      output = self.group_texts_by_bbox(ocr_result)
-      full_text += " ".join(output)
-
-    return full_text
+      page_chunk = self.group_texts_by_bbox(ocr_result, page_no)
+      result.extend(page_chunk)
+    return result

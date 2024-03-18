@@ -1,4 +1,4 @@
 class Metadata:
   def __init__(self, page_no, bbox):
-    self.page = page_no + 1
+    self.page_no = page_no
     self.bbox = bbox
