@@ -20,13 +20,14 @@ class ProcessPDF:
   def __init__(self):
     pass
 
-  def __call__(self, filepath: Optional[str] = None):
+  def __call__(self, chunk_size: Optional[int] = 1024, filepath: Optional[str] = None):
     """
     Processes a file from a given filepath and returns a Chunk object.
 
     This function is designed to handle both local file paths and URLs as input. It reads the content of the pdf file, processes it according, and encapsulates the processed data into a Chunk object which is then returned.
 
     Parameters:
+    chunk_size (int): number of tokens you want to split the text by. defaults to 1024.
     filepath (str): The filepath or URL of the file to be processed. This can be a path to a local file or a URL to a remote file.
 
     Returns:
