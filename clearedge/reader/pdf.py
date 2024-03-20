@@ -143,7 +143,7 @@ def parse_with_pymupdf(doc):
 
   return chunks
 
-def process_file_with_ocr(doc, use_llm, llm_provider):
+def process_file_with_ocr(doc):
   # convert doc to images
   ocr = RapidOCR(
     config_path="clearedge/ocr_config/config.yaml",
@@ -156,9 +156,7 @@ def process_file_with_ocr(doc, use_llm, llm_provider):
     ocr_result, _ = ocr(img)
     page_chunk = group_rapidocr_texts_by_bbox(
       text_items=ocr_result,
-      page_no=page_no,
-      use_llm=use_llm,
-      llm_provider=llm_provider
+      page_no=page_no
     )
     result.extend(page_chunk)
   return result

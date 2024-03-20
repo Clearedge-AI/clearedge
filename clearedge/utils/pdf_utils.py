@@ -186,7 +186,7 @@ def extract_text(input_data):
 
   return result
 
-def group_rapidocr_texts_by_bbox(text_items, page_no, use_llm=False, llm_provider="openai"):
+def group_rapidocr_texts_by_bbox(text_items, page_no):
   y_threshold = 20
   x_threshold = 4
   # Sort the bounding box data by the y-coordinate of the top-left corner
