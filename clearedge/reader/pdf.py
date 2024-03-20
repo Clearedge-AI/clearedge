@@ -1,7 +1,7 @@
 from clearedge.metadata import Metadata
 from clearedge.chunk import Chunk
 from clearedge.utils.pdf_utils import (
-  check_pdf,
+  should_perform_ocr,
   convert_doc_to_image,
   clean_blocks,
   check_divide,
@@ -23,6 +23,7 @@ first_line_end_thesh = 0.8
 def process_pdf(
   chunk_size: Optional[int] = 1024,
   filepath: Optional[str] = None,
+  use_ocr: Optional[bool] = False,
   ocr_provider: Optional[str] = "doctr",
 ) -> List[Chunk]:
   """
@@ -67,10 +68,10 @@ def process_pdf(
         raise FileNotFoundError(f"The file at {filepath} does not exist or is inaccessible.")
       else:
         raise ValueError(f"Failed to open PDF: {e}")
-  if check_pdf(doc):
-    return parse_with_pymupdf(doc)
-  else:
+  if use_ocr or should_perform_ocr(doc):
     return process_file_with_ocr(doc)
+  else:
+    return parse_with_pymupdf(doc)
 
 def parse_with_pymupdf(doc):
   page_wise_block_list = []

@@ -7,7 +7,7 @@ import re
 
 first_line_end_thesh = 0.8
 
-def check_pdf(doc):
+def should_perform_ocr(doc):
   """
   Function to check if text extraction is possible from a PDF file.
 
@@ -36,7 +36,7 @@ def check_pdf(doc):
     print(f"Checking if text is extractable from PDF: {content_counter} pages contain text.")
 
     # If at least one page contains text, return True
-    return content_counter > 0
+    return content_counter == 0
 
   except Exception as e:
     # Handle any exceptions and return False
@@ -259,7 +259,6 @@ def group_rapidocr_texts_by_bbox(text_items, page_no):
         current_line.append(current_group[i])
       else:
         sorted_data = sorted(current_line, key=lambda x: x[2])
-        print('sorted_data ', ' '.join(x[1] for x in sorted_data))
         extracted = extract_text(sorted_data)
         boxes = [bbox[3] for bbox in sorted_data]
         top_left, top_right, bottom_right, bottom_left = get_extreme_bboxes(boxes)
@@ -268,7 +267,6 @@ def group_rapidocr_texts_by_bbox(text_items, page_no):
             Chunk(
               text=chunk,
               metadata=Metadata(
-
                 page_no=page_no,
                 bbox=[top_left, top_right, bottom_right, bottom_left],
                 doc_type="pdf",
@@ -280,7 +278,6 @@ def group_rapidocr_texts_by_bbox(text_items, page_no):
       prev_x = current_group[i][0]
 
     sorted_data = sorted(current_line, key=lambda x: x[2])
-    print('sorted_data ', ' '.join(x[1] for x in sorted_data))
     extracted = extract_text(sorted_data)
     boxes = [bbox[3] for bbox in sorted_data]
     top_left, top_right, bottom_right, bottom_left = get_extreme_bboxes(boxes)
