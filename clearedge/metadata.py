@@ -7,3 +7,15 @@ class Metadata:
     self.filename = filename
     self.doc_type = doc_type
     self.created_at = created_at
+
+  def to_dict(self):
+    """Returns a dictionary representation of the metadata fields."""
+    return {
+      "heading": self.heading,
+      "sub_heading": self.sub_heading,
+      "page_no": self.page_no,
+      "bbox": self.bbox,
+      "filename": self.filename,
+      "doc_type": self.doc_type,
+      "created_at": self.created_at,
+    }
