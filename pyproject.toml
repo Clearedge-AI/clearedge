@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "clearedge"
-version = "0.1.12"
+version = "0.1.13"
 description = ""
 authors = ["Clearedge"]
 readme = "README.md"
