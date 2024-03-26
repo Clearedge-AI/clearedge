@@ -1,21 +1,14 @@
-from clearedge.metadata import Metadata
 from clearedge.chunk import Chunk
 from clearedge.utils.pdf_utils import (
-  check_divide,
-  clean_blocks,
   convert_to_images,
-  get_token_list,
-  should_perform_ocr,
   process_images
 )
 from rapidocr_onnxruntime import RapidOCR
-from datetime import datetime
 from typing import Optional, List
 from rapid_table import RapidTable
 from doctr.models import ocr_predictor
 from clearedge.utils.ultralytics_utils import YOLO
 
-import fitz
 import requests
 import validators
 import io
@@ -26,7 +19,6 @@ first_line_end_thesh = 0.8
 
 def process_pdf(
   filepath: Optional[str] = None,
-  use_ocr: Optional[bool] = False,
   ocr_model: Optional[str] = "Tesseract",
 ) -> List[Chunk]:
   """
@@ -36,7 +28,6 @@ def process_pdf(
 
   Parameters:
   filepath (str): The filepath or URL of the file to be processed. This can be a path to a local file or a URL to a remote file.
-  use_ocr (str): If this is set to True, then it will always use ocr method to parse the document. Defaults to False
   ocr_model (str): Name of the ocr model to be used if no text found in the pdf. Defaults to 'Tesseract.' Available values are: 'DoctTR', 'Tesseract', 'Rapid'.'
 
   Returns:
@@ -51,7 +42,6 @@ def process_pdf(
   >>> chunks = process_pdf(filepath="path/to/local/file.pdf")
   >>> chunks = process_pdf(filepath="http://example.com/remote/file.pdf")
   """
-  doc = None
   pdf_stream = None
 
   # Check if filepath is a URL
@@ -59,10 +49,6 @@ def process_pdf(
     response = requests.get(filepath)
     if response.status_code == 200:
       pdf_stream = io.BytesIO(response.content)
-      try:
-        doc = fitz.open("pdf", pdf_stream)
-      except Exception as e:
-        raise ValueError(f"Failed to open PDF from URL: {e}")
     else:
       raise FileNotFoundError(f"Failed to fetch PDF from {filepath}")
   else:
@@ -73,88 +59,8 @@ def process_pdf(
       raise FileNotFoundError(f"The file at {filepath} does not exist or is inaccessible.")
     with open(filepath, 'rb') as file:
       pdf_stream = io.BytesIO(file.read())
-    try:
-      doc = fitz.open(stream=pdf_stream, filetype="pdf")
-    except Exception as e:
-      raise ValueError(f"Failed to open PDF: {e}")
-
   # Process the document based on OCR requirements
-  if use_ocr or should_perform_ocr(doc):
-    return _process_file_with_ocr(ocr_model, pdf_stream)
-  else:
-    return _parse_with_pymupdf(doc)
-
-def _parse_with_pymupdf(doc):
-  page_wise_block_list = []
-  block_list = []
-  chunks = []
-  for page_no, page in enumerate(doc):
-    if page_no == 0:
-      page_data = page.get_text("dict", flags=fitz.TEXT_INHIBIT_SPACES)
-      page_data["blocks"] = [
-        block for block in page_data["blocks"] if block["type"] == 0
-      ]
-      [block.update({"list_item_start": False}) for block in page_data["blocks"]]
-      page_data["blocks"].sort(key=lambda page_block: page_block["bbox"][1])
-      # initialize empty list
-      for block_no, block in enumerate(page_data["blocks"]):
-        for line_no, line in enumerate(block["lines"]):
-          max_size = 0
-          for span in line["spans"]:
-            if span["size"] > max_size:
-              max_size = span["size"]
-          page_data["blocks"][block_no]["lines"][line_no]["tokens"] = []
-          page_data["blocks"][block_no]["lines"][line_no]["word_bbox"] = []
-      # Add word tokens and bbox to lines
-      word_data_list = page.get_text("words")
-
-      for word_data in word_data_list:
-        block_no = word_data[5]
-        line_no = word_data[6]
-        bbox = list(word_data[:4])
-        bbox[0] = bbox[0] / page_data["width"]
-        bbox[1] = bbox[1] / page_data["height"]
-        bbox[2] = bbox[2] / page_data["width"]
-        bbox[3] = bbox[3] / page_data["height"]
-        page_data["blocks"][block_no]["lines"][line_no]["tokens"].append(
-          word_data[4]
-        )
-        page_data["blocks"][block_no]["lines"][line_no]["word_bbox"].append(
-          tuple(bbox + [page_no])
-        )
-
-      page_data["blocks"] = clean_blocks(page_data["blocks"])
-      divided_block_list = []
-      for block in page_data["blocks"]:
-        divided_block_list.extend(check_divide(block))
-      page_data["blocks"] = clean_blocks(divided_block_list)
-      page_wise_block_list.append(page_data["blocks"])
-
-    for page_no, blocks in enumerate(page_wise_block_list):
-      curr_segment_list = [get_token_list(block) for block in blocks]
-      curr_page_content = '\n\n'.join([" ".join(segment["tokens"]) for segment in curr_segment_list])
-      bbox = []
-
-      for block in blocks:
-        x1 = block['bbox'][0]
-        y1 = block['bbox'][1]
-        x2 = block['bbox'][2]
-        y2 = block['bbox'][3]
-        bbox.append({"top": y1, "left": x1, "width": x2 - x1, "height": y2 - y1})
-      metadata = Metadata(
-        page_no=page_no + 1,
-        bbox=bbox,
-        doc_type="pdf",
-        created_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-      )
-      chunks.append(Chunk(text=curr_page_content, metadata=metadata))
-
-    for page_wise_blocks in page_wise_block_list:
-      block_list.extend(page_wise_blocks)
-
-    if len(block_list) == 0:
-      return []
-    return chunks
+  return _process_file_with_ocr(ocr_model, pdf_stream)
 
 def _process_file_with_ocr(ocr_model, pdf_stream):
   current_script_dir = os.path.dirname(__file__)
@@ -171,7 +77,7 @@ def _process_file_with_ocr(ocr_model, pdf_stream):
   docseg_model = YOLO(docseg_model_name)
 
   # Process the images with the model
-  results = docseg_model(source=images)
+  results = docseg_model(source=images, iou=0.1, conf=0.25)
 
   # Initialize a dictionary to store results
   mydict = {}
