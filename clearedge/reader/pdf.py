@@ -1,39 +1,33 @@
 from clearedge.metadata import Metadata
 from clearedge.chunk import Chunk
 from clearedge.utils.pdf_utils import (
-  add_content_to_subheading,
   check_divide,
   clean_blocks,
-  contains_block,
-  convert_doc_to_image,
-  crop_image_by_block,
-  extract_text_from_block,
+  convert_to_images,
   get_token_list,
-  get_text_and_table_blocks,
-  get_unique_tables,
-  update_subheading,
   should_perform_ocr,
-  sort_blocks_by_reading_order
+  process_images
 )
 from rapidocr_onnxruntime import RapidOCR
 from datetime import datetime
 from typing import Optional, List
 from rapid_table import RapidTable
-from PIL import Image
+from doctr.models import ocr_predictor
+from clearedge.utils.ultralytics_utils import YOLO
 
 import fitz
 import requests
 import validators
 import io
-import cv2
-import layoutparser as lp
+import os
+import pathlib
 
 first_line_end_thesh = 0.8
 
 def process_pdf(
   filepath: Optional[str] = None,
   use_ocr: Optional[bool] = False,
-  ocr_provider: Optional[str] = "doctr",
+  ocr_model: Optional[str] = "Tesseract",
 ) -> List[Chunk]:
   """
   Processes a file from a given filepath and returns a Chunk object.
@@ -43,7 +37,7 @@ def process_pdf(
   Parameters:
   filepath (str): The filepath or URL of the file to be processed. This can be a path to a local file or a URL to a remote file.
   use_ocr (str): If this is set to True, then it will always use ocr method to parse the document. Defaults to False
-  ocr_provider (str): Name of the ocr provider to be used if no text found in the pdf. Defaults to 'doctr.' Available values are: 'doctr', 'rapidocr.'
+  ocr_model (str): Name of the ocr model to be used if no text found in the pdf. Defaults to 'Tesseract.' Available values are: 'DoctTR', 'Tesseract', 'Rapid'.'
 
   Returns:
   Chunk: List of Chunk class containing the processed data from the file.
@@ -57,6 +51,10 @@ def process_pdf(
   >>> chunks = process_pdf(filepath="path/to/local/file.pdf")
   >>> chunks = process_pdf(filepath="http://example.com/remote/file.pdf")
   """
+  doc = None
+  pdf_stream = None
+
+  # Check if filepath is a URL
   if validators.url(filepath):
     response = requests.get(filepath)
     if response.status_code == 200:
@@ -64,21 +62,25 @@ def process_pdf(
       try:
         doc = fitz.open("pdf", pdf_stream)
       except Exception as e:
-        raise ValueError(f"Failed to open PDF: {e}")
+        raise ValueError(f"Failed to open PDF from URL: {e}")
     else:
       raise FileNotFoundError(f"Failed to fetch PDF from {filepath}")
   else:
+    # Check if the local file exists and is a PDF
     if not filepath.lower().endswith('.pdf'):
       raise ValueError("Filepath does not point to a PDF file.")
+    if not os.path.exists(filepath):
+      raise FileNotFoundError(f"The file at {filepath} does not exist or is inaccessible.")
+    with open(filepath, 'rb') as file:
+      pdf_stream = io.BytesIO(file.read())
     try:
-      doc = fitz.open(filepath)
+      doc = fitz.open(stream=pdf_stream, filetype="pdf")
     except Exception as e:
-      if "no such file" in str(e).lower():
-        raise FileNotFoundError(f"The file at {filepath} does not exist or is inaccessible.")
-      else:
-        raise ValueError(f"Failed to open PDF: {e}")
+      raise ValueError(f"Failed to open PDF: {e}")
+
+  # Process the document based on OCR requirements
   if use_ocr or should_perform_ocr(doc):
-    return _process_file_with_ocr(doc)
+    return _process_file_with_ocr(ocr_model, pdf_stream)
   else:
     return _parse_with_pymupdf(doc)
 
@@ -154,52 +156,47 @@ def _parse_with_pymupdf(doc):
       return []
     return chunks
 
-def _process_file_with_ocr(doc):
-  chunks = []
-  ocr = RapidOCR(
-    config_path="clearedge/ocr_config/config.yaml",
-    rec_model_path='clearedge/reader/en_PP-OCRv4_rec_infer.onnx'
-  )
-  model = lp.Detectron2LayoutModel(
-    'lp://PubLayNet/mask_rcnn_X_101_32x8d_FPN_3x/config',
-    extra_config=["MODEL.ROI_HEADS.SCORE_THRESH_TEST", 0.5],
-    label_map={0: "Text", 1: "Title", 2: "List", 3: "Table", 4: "Figure"}
-  )
+def _process_file_with_ocr(ocr_model, pdf_stream):
+  current_script_dir = os.path.dirname(__file__)
+  # Construct the absolute path to the config.yaml file
+  config_path = os.path.join(current_script_dir, '..', 'ocr_config', 'config.yaml')
+  config_path = os.path.abspath(config_path)
+
+  # Construct the absolute path to the model file
+  rec_model_path = os.path.join(current_script_dir, 'en_PP-OCRv4_rec_infer.onnx')
+  rec_model_path = os.path.abspath(rec_model_path)
+  images = convert_to_images(pdf_stream)
+  # Load the document segmentation model
+  docseg_model_name = 'DILHTWD/documentlayoutsegmentation_YOLOv8_ondoclaynet'
+  docseg_model = YOLO(docseg_model_name)
+
+  # Process the images with the model
+  results = docseg_model(source=images)
+
+  # Initialize a dictionary to store results
+  mydict = {}
+  names = {0: 'Caption', 1: 'Footnote', 2: 'Formula', 3: 'List-item', 4: 'Page-footer', 5: 'Page-header', 6: 'Picture', 7: 'Section-header', 8: 'Table', 9: 'Text', 10: 'Title'}
+
+  # Extract and store the paths, coordinates, and labels of detected components
+  for entry in results:
+    thepath = pathlib.Path(entry.path)
+    thecoords = entry.boxes.xyxyn.cpu().numpy()  # Move tensor to CPU before conversion
+    labels = entry.boxes.cls.cpu().numpy()  # Move tensor to CPU before conversion
+    num_boxes = len(thecoords)
+
+    # Combine coordinates with corresponding labels
+    bbox_labels = []
+    for i in range(num_boxes):
+      xmin, ymin, xmax, ymax = thecoords[i]
+      label = names[int(labels[i])]  # Convert label index to label name using the provided dictionary 'names'
+      if label != 'Footnote' and label != 'Page-footer' and label != 'Page-header' and label != 'Picture':
+        bbox_labels.append((xmin, ymin, xmax, ymax, label))
+
+    mydict.update({str(thepath): bbox_labels})
+
+  predictor = ocr_predictor(det_arch="fast_tiny", pretrained=True) if ocr_model == "DocTr" else None  # Initialize your OCR predictor here if using DocTr
+  rapid_ocr = RapidOCR(config_path=config_path, rec_model_path=rec_model_path)
   table_engine = RapidTable()
-  # convert doc to images
-  images = convert_doc_to_image(doc)
-  for page_no, image_path in enumerate(images):
-    img = cv2.imread(image_path)
-    layout = model.detect(img)
-    blocks = get_text_and_table_blocks(layout)
-    unique_tables = get_unique_tables(layout)
-    sorted_blocks = sort_blocks_by_reading_order(blocks, img)
-    subheading_content = {}
-    subheading_text = None
-    for block in sorted_blocks:
-      segment_image = crop_image_by_block(img, block)
-      output, _ = ocr(segment_image)
-      if block.type == "Table":
-        if contains_block(block, unique_tables):
-          table_html = table_engine(segment_image, output)[0]
-          add_content_to_subheading(subheading_content, subheading_text, table_html)
-      else:
-        if output:
-          final_text = extract_text_from_block(output)
-          subheading_text = update_subheading(block, final_text, subheading_text)
-          add_content_to_subheading(subheading_content, subheading_text, final_text)
-    for key, value in subheading_content.items():
-      chunks.append(
-        Chunk(
-          text=" ".join(value),
-          metadata=Metadata(
-            sub_heading=key,
-            page_no=page_no,
-            filename=doc.name,
-            doc_type="pdf",
-            created_at=datetime.now().strftime("%m/%d/%Y %H:%M"),
-          )
-        )
-      )
-  print('chunks ', chunks)
-  return chunks
+
+  output_data = process_images(images, mydict, ocr_model, predictor, rapid_ocr, table_engine)
+  return output_data
