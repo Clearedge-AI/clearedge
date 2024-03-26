@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "clearedge"
-version = "0.1.11"
+version = "0.1.12"
 description = ""
 authors = ["Clearedge"]
 readme = "README.md"
@@ -17,7 +17,6 @@ ultralytics = ">=8.0.225,<8.1.0"
 python-doctr = {extras = ["torch"], version = "^0.8.1"}
 huggingface-hub = "^0.22.0"
 pytesseract = "^0.3.10"
-tf2onnx = "^1.16.1"
 pdf2image = "^1.17.0"
 rapid-table = "^0.1.3"
 

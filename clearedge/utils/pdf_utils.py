@@ -53,7 +53,6 @@ def process_images(img_list, mydict, ocr_model, predictor=None, rapid_ocr=None, 
       xmin, ymin, xmax, ymax, label = bbox
       xmin, ymin, xmax, ymax = [int(coord * size) for coord, size in zip(bbox[:4], [width, height, width, height])]
       cropped_img = img.crop((xmin, ymin, xmax, ymax))
-      cropped_img.show()
       raw_text = process_ocr(ocr_model, cropped_img, label, predictor, rapid_ocr, table_engine)
       if label in ['Title', 'Section-header']:
         last_title, last_subheading = (raw_text, last_subheading) if label == 'Title' else (last_title, raw_text)

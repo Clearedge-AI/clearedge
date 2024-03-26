@@ -2198,24 +2198,6 @@ files = [
 mpmath = ">=0.19"
 
 [[package]]
-name = "tf2onnx"
-version = "1.16.1"
-description = "Tensorflow to ONNX converter"
-optional = false
-python-versions = "*"
-files = [
-    {file = "tf2onnx-1.16.1-py3-none-any.whl", hash = "sha256:90fb5f62575896d47884d27dc313cfebff36b8783e1094335ad00824ce923a8a"},
-]
-
-[package.dependencies]
-flatbuffers = ">=1.12"
-numpy = ">=1.14.1"
-onnx = ">=1.4.1"
-protobuf = ">=3.20,<4.0"
-requests = "*"
-six = "*"
-
-[[package]]
 name = "thop"
 version = "0.1.1.post2209072238"
 description = "A tool to count the FLOPs of PyTorch model."
@@ -2624,4 +2606,4 @@ test = ["pytest"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "4cde39198294191f82313d19108c95ad189a0bfe2dbc7c164034660d6faed7f6"
+content-hash = "7f9e07a9e31b0e9a09fcb8c316c2163164a1eb0c3629d660d91163768fc49bd9"
