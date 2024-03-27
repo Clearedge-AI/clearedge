@@ -51,7 +51,7 @@ If you wish to cite this project, feel free to use this [BibTeX](http://www.bibt
 ```bibtex
 @misc{doctr2021,
     title={clearedge: RAG preprocessor},
-    author={Clearedge},
+    author={Clearedge AI},
     year={2024},
     publisher = {GitHub},
     howpublished = {\url{https://github.com/Clearedge-AI/clearedge}}
