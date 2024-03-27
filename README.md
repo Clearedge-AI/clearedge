@@ -4,19 +4,15 @@ Clearedge is a Python package designed to simplify the process of extracting raw
 
 ## Features
 
-Text Extraction: Extract raw text from documents (currently supports pdf only. other file types coming soon).
-
-Metadata Retrieval: Obtain metadata such as subheadings, page numbers, file names, bounding boxes and more.
-
-Bounding Box Coordinates: Access bbox coordinates for text chunks, enabling spatial analysis of text placement within documents.
-
-Chunk Type Identification: Identify types of text chunks (e.g., table, text and more) for advanced content analysis.
-
-Support for Multiple Formats (coming soon): Compatible with popular document formats, ensuring broad usability.
+- Text Extraction: Extract raw text from documents (currently supports pdf only. other file types coming soon).
+- Metadata Retrieval: Obtain metadata such as subheadings, page numbers, file names, bounding boxes and more.
+- Bounding Box Coordinates: Access bbox coordinates for text chunks, enabling spatial analysis of text placement within documents.
+- Chunk Type Identification: Identify types of text chunks (e.g., table, text and more) for advanced content analysis.
+- Support for Multiple Formats (coming soon): Compatible with popular document formats, ensuring broad usability.
 
 ## Installation
 
-To install clearedge, you will need Python 3.6 or later. Installation is easy using pip:
+To install clearedge, you will need Python 3.10 or later. Installation is easy using pip:
 
 ```bash
 pip install clearedge
@@ -41,15 +37,29 @@ print(metadata.to_dict())
 ```
 
 ## Documentation
-For more detailed information on all the features and functionalities of Clearedge, please refer to the official documentation.
+For more detailed information on all the features and functionalities of Clearedge, please refer to the official documentation (coming soon).
 
 ## Contributing
 Contributions to Clearedge are welcome! If you have suggestions for improvements or bug fixes, please feel free to:
 Open an issue to discuss what you would like to change.
 Submit pull requests for us to review.
 
+## Citation
+
+If you wish to cite this project, feel free to use this [BibTeX](http://www.bibtex.org/) reference:
+
+```bibtex
+@misc{doctr2021,
+    title={clearedge: RAG preprocessor},
+    author={Clearedge},
+    year={2024},
+    publisher = {GitHub},
+    howpublished = {\url{https://github.com/Clearedge-AI/clearedge}}
+}
+```
+
 ## License
-Clearedge is released under the Apache 2.0 License. See the LICENSE file for more details.
+Clearedge is released under the Apache 2.0 License. See the [`LICENSE`](https://github.com/Clearedge-AI/clearedge?tab=Apache-2.0-1-ov-file#readme) file for more details.
 
 ## Acknowledgments
 This project was inspired by the need for a simple, yet comprehensive tool for document analysis and metadata extraction. We thank all contributors and users for their support and feedback. Clearedge aims to be a valuable tool for developers, researchers, and anyone involved in processing and analyzing document content. We hope it simplifies your projects and helps you achieve your goals more efficiently.
