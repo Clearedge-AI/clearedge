@@ -12,7 +12,7 @@ Clearedge is a Python package designed to simplify the process of extracting raw
 
 ## Installation
 
-To install clearedge, you will need Python 3.10 or later. Installation is easy using pip:
+To install clearedge, you will need Python 3.9 or later. Installation is easy using pip:
 
 ```bash
 pip install clearedge
