@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "clearedge"
-version = "0.1.13"
+version = "0.1.14"
 description = ""
 authors = ["Clearedge"]
 readme = "README.md"
@@ -19,6 +19,8 @@ huggingface-hub = "^0.22.0"
 pytesseract = "^0.3.10"
 pdf2image = "^1.17.0"
 rapid-table = "^0.1.3"
+tqdm = "^4.66.2"
+pymupdf = "^1.24.0"
 
 [build-system]
 requires = ["poetry-core"]
