@@ -25,6 +25,8 @@ brew install tesseract cairo pango gdk-pixbuf libffi
 
 For Windows users, those dependencies are included in GTK. You can find the latest installer over [here](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases).
 
+### Latest release
+
 You can then install the latest release of the package using [pypi](https://pypi.org/project/clearedge/) as follows:
 ```bash
 pip install clearedge
