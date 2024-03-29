@@ -13,7 +13,6 @@ Clearedge is a Python package designed to simplify the process of extracting raw
 ## Installation
 ### Prerequisites 
 
-Python 3.9 (or higher) 
 To install clearedge, you will need Python 3.9 or later. Installation is easy using pip:
 
 Since we use Tesseract and Doctr, you will need extra dependencies. 
