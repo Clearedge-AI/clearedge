@@ -2,7 +2,6 @@ from PIL import Image
 from clearedge.bbox import Bbox
 from clearedge.chunk import Chunk
 from clearedge.metadata import Metadata
-from doctr.io import DocumentFile
 from pdf2image import convert_from_bytes
 from collections import defaultdict
 
