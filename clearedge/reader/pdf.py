@@ -11,7 +11,6 @@ from clearedge.utils.pdf_utils import (
 from rapidocr_onnxruntime import RapidOCR
 from typing import Optional, List
 from rapid_table import RapidTable
-from doctr.models import ocr_predictor
 from clearedge.utils.ultralytics_utils import YOLO
 from tqdm import tqdm
 
@@ -37,7 +36,7 @@ def process_pdf(
   Parameters:
   filepath (str): The filepath or URL of the file to be processed. This can be a path to a local file or a URL to a remote file.
   use_ocr (bool): Use ocr to parse the pdf file. Defaults to False.
-  ocr_model (str): Name of the ocr model to be used if no text found in the pdf. Defaults to 'Tesseract.' Available values are: 'DoctTR', 'Tesseract', 'Rapid'.'
+  ocr_model (str): Name of the ocr model to be used if no text found in the pdf. Defaults to 'Tesseract.' Available values are: 'Tesseract', 'Rapid'.'
 
   Returns:
   Chunk: List of Chunk class containing the processed data from the file.
@@ -116,11 +115,10 @@ def _process_file_with_ocr(ocr_model, pdf_stream, filename):
 
     mydict.update({str(thepath): bbox_labels})
 
-  predictor = ocr_predictor(det_arch="fast_tiny", pretrained=True) if ocr_model == "DocTr" else None  # Initialize your OCR predictor here if using DocTr
   rapid_ocr = RapidOCR(config_path=config_path, rec_model_path=rec_model_path)
   table_engine = RapidTable()
 
-  output_data = process_images(images, mydict, ocr_model, filename, predictor, rapid_ocr, table_engine)
+  output_data = process_images(images, mydict, ocr_model, filename, rapid_ocr, table_engine)
   return output_data
 
 

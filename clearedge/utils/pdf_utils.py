@@ -24,12 +24,8 @@ def convert_to_images(pdf_stream):
   return paths
 
 
-def process_ocr(ocr_model, image, label, predictor=None, rapid_ocr=None, table_engine=None):
-  if ocr_model == 'DocTr':
-    cropped_doc = DocumentFile.from_images(image)
-    result = predictor(cropped_doc)
-    raw_text = [word.value for block in result.pages[0].blocks for line in block.lines for word in line.words]
-  elif ocr_model == 'Tesseract':
+def process_ocr(ocr_model, image, label, rapid_ocr=None, table_engine=None):
+  if ocr_model == 'Tesseract':
     data = pytesseract.image_to_string(image, lang='eng')
     raw_text = data.split(" ") if label != "Table" else table_engine(np.array(image), rapid_ocr(np.array(image))[0])[0]
   elif ocr_model == "Rapid":
@@ -52,7 +48,7 @@ def sort_and_update_metadata(temp_output, width):
   return sorted_output
 
 
-def process_images(img_list, mydict, ocr_model, filename, predictor=None, rapid_ocr=None, table_engine=None):
+def process_images(img_list, mydict, ocr_model, filename, rapid_ocr=None, table_engine=None):
   output, page_no = [], 0
   last_title, last_subheading = "", ""
 
@@ -65,7 +61,7 @@ def process_images(img_list, mydict, ocr_model, filename, predictor=None, rapid_
       xmin, ymin, xmax, ymax, label = bbox
       xmin, ymin, xmax, ymax = [int(coord * size) for coord, size in zip(bbox[:4], [width, height, width, height])]
       cropped_img = img.crop((xmin, ymin, xmax, ymax))
-      raw_text = process_ocr(ocr_model, cropped_img, label, predictor, rapid_ocr, table_engine)
+      raw_text = process_ocr(ocr_model, cropped_img, label, rapid_ocr, table_engine)
       if label in ['Title', 'Section-header']:
         last_title, last_subheading = (raw_text, last_subheading) if label == 'Title' else (last_title, raw_text)
 
