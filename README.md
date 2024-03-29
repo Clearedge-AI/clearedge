@@ -11,8 +11,19 @@ Clearedge is a Python package designed to simplify the process of extracting raw
 - Support for Multiple Formats (coming soon): Compatible with popular document formats, ensuring broad usability.
 
 ## Installation
+### Prerequisites 
 
+Python 3.9 (or higher) 
 To install clearedge, you will need Python 3.9 or later. Installation is easy using pip:
+
+Since we use Tesseract and Doctr, you will need extra dependencies. 
+
+For MacOS users, you need to run: 
+```shell
+brew install tesseract cairo pango gdk-pixbuf libffi
+```
+
+For Windows users, those dependencies are included in GTK. You can find the latest installer over [here](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases).
 
 ```bash
 pip install clearedge
