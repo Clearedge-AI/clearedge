@@ -1,3 +1,4 @@
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Clearedge-AI/clearedge/notebooks/blob/main/quicktour.ipynb)
 ## Overview
 
 Clearedge is a Python package designed to simplify the process of extracting raw text and metadata from documents. You can use it to retrieve not only the text but also valuable metadata including titles, subheadings, page numbers, file names, bounding box (bbox) coordinates, and chunk types. Whether you're working on document analysis, data extraction projects, or building a RAG app with LLM, Clearedge provides a straightforward and efficient solution.
