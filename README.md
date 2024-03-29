@@ -46,7 +46,7 @@ Submit pull requests for us to review.
 If you wish to cite this project, feel free to use this [BibTeX](http://www.bibtex.org/) reference:
 
 ```bibtex
-@misc{doctr2021,
+@misc{clearedge2024,
     title={clearedge: RAG preprocessor},
     author={Clearedge AI},
     year={2024},
