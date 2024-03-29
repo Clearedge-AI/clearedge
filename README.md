@@ -24,7 +24,7 @@ Here's a simple example to get you started with clearedge:
 from clearedge.reader.pdf import process_pdf
 
 # Call the extractor with the path to your document
-chunks = process_pdf('/path/to/your/document.pdf', use_ocr=True) # do not add use_ocr for fster processing. output is less accurate without ocr. 
+chunks = process_pdf('/path/to/your/document.pdf', use_ocr=True) # do not add use_ocr for faster processing. output is less accurate without ocr. 
 
 # Extract text and metadata
 for chunk in chunks:
