@@ -1,9 +1,10 @@
+import time
 from clearedge.chunk import Chunk
 from clearedge.metadata import Metadata
 from clearedge.utils.pdf_utils import (
+  batch_convert_pdf_to_images,
   check_divide,
   clean_blocks,
-  convert_to_images,
   get_token_list,
   process_images,
   should_process_with_ocr
@@ -13,6 +14,7 @@ from typing import Optional, List
 from rapid_table import RapidTable
 from clearedge.utils.ultralytics_utils import YOLO
 from tqdm import tqdm
+from contextlib import ExitStack
 
 import fitz
 import requests
@@ -26,7 +28,7 @@ first_line_end_thesh = 0.8
 def process_pdf(
   filepath: Optional[str] = None,
   use_ocr: Optional[bool] = False,
-  ocr_model: Optional[str] = "Tesseract",
+  ocr_model: Optional[str] = "Tesseract"
 ) -> List[Chunk]:
   """
   Processes a file from a given filepath and returns a Chunk object.
@@ -69,15 +71,24 @@ def process_pdf(
     if not os.path.exists(filepath):
       raise FileNotFoundError(f"The file at {filepath} does not exist or is inaccessible.")
     with open(filepath, 'rb') as file:
-      pdf_stream = io.BytesIO(file.read())
+      pdf_stream = file.read()
       doc = fitz.open(filepath)
   if use_ocr or should_process_with_ocr(doc):
-    return _process_file_with_ocr(ocr_model, pdf_stream, doc.name)
+    return _process_file_with_ocr(ocr_model, doc, filepath)
   else:
     return _fast_process(doc)
 
+def process_image(image_path):
+  docseg_model_name = 'DILHTWD/documentlayoutsegmentation_YOLOv8_ondoclaynet'
+  docseg_model = YOLO(docseg_model_name)
+  result = docseg_model(source=image_path, iou=0.1, conf=0.25)
+  return result
 
-def _process_file_with_ocr(ocr_model, pdf_stream, filename):
+def _process_file_with_ocr(ocr_model, doc, filepath):
+  import multiprocessing as mp
+  num_processes = os.cpu_count()
+  total_pages = doc.page_count
+  filename = doc.name
   current_script_dir = os.path.dirname(__file__)
   # Construct the absolute path to the config.yaml file
   config_path = os.path.join(current_script_dir, '..', 'ocr_config', 'config.yaml')
@@ -86,14 +97,30 @@ def _process_file_with_ocr(ocr_model, pdf_stream, filename):
   # Construct the absolute path to the model file
   rec_model_path = os.path.join(current_script_dir, 'en_PP-OCRv4_rec_infer.onnx')
   rec_model_path = os.path.abspath(rec_model_path)
-  images = convert_to_images(pdf_stream)
-  # Load the document segmentation model
-  docseg_model_name = 'DILHTWD/documentlayoutsegmentation_YOLOv8_ondoclaynet'
-  docseg_model = YOLO(docseg_model_name)
 
-  # Process the images with the model
-  results = docseg_model(source=images, iou=0.1, conf=0.25)
+  conversion_start_time = time.time()
+  results = batch_convert_pdf_to_images(filepath)
+  conversion_end_time = time.time()
 
+  print(f"Image conversion Execution time: {conversion_end_time - conversion_start_time} seconds")
+  image_paths = [f"page_{i + 1}.png"
+                 for i in range(0, total_pages)]
+  batch_size = 100
+  results = []
+
+  results = []
+  yolo_start_time = time.time()
+  with mp.Pool(processes=num_processes) as pool:
+    batches = [image_paths[i:i + batch_size] for i in range(0, len(image_paths), batch_size)]
+    batch_results = pool.map(process_image, batches)
+
+    for batch_result in batch_results:
+      results.extend(batch_result)
+
+  yolo_end_time = time.time()
+  print(f"Yolo Execution time: {yolo_end_time - yolo_start_time} seconds")
+
+  # results = docseg_model(source=image_paths, iou=0.1, conf=0.25)
   # Initialize a dictionary to store results
   mydict = {}
   names = {0: 'Caption', 1: 'Footnote', 2: 'Formula', 3: 'List-item', 4: 'Page-footer', 5: 'Page-header', 6: 'Picture', 7: 'Section-header', 8: 'Table', 9: 'Text', 10: 'Title'}
@@ -114,11 +141,13 @@ def _process_file_with_ocr(ocr_model, pdf_stream, filename):
         bbox_labels.append((xmin, ymin, xmax, ymax, label))
 
     mydict.update({str(thepath): bbox_labels})
-
+  rapid_start_time = time.time()
   rapid_ocr = RapidOCR(config_path=config_path, rec_model_path=rec_model_path)
   table_engine = RapidTable()
 
-  output_data = process_images(images, mydict, ocr_model, filename, rapid_ocr, table_engine)
+  output_data = process_images(total_pages, mydict, ocr_model, filename, rapid_ocr, table_engine)
+  rapid_end_time = time.time()
+  print(f"RapidOCR Execution time: {rapid_end_time - rapid_start_time} seconds")
   return output_data
 
 

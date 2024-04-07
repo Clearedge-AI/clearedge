@@ -4,23 +4,45 @@ from clearedge.chunk import Chunk
 from clearedge.metadata import Metadata
 from pdf2image import convert_from_bytes
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import concurrent.futures
 
+import multiprocessing as mp
 import pytesseract
 import numpy as np
 import re
+import fitz
+import os
 
 first_line_end_thesh = 0.8
 
 
-def convert_to_images(pdf_stream):
-  """Converts a pdf stream into images for ocr processing."""
-  images = convert_from_bytes(pdf_stream.read())
-  paths = []
-  # Save images
-  for i, image in enumerate(images):
-    image.save(f'page{i}.png', 'PNG')
-    paths.append(f'page{i}.png')
-  return paths
+def convert_pdf_to_images(args):
+  doc, start_page, end_page = args
+  for i in range(start_page, min(end_page, doc.page_count)):
+    page = doc.load_page(i)
+    pix = page.get_pixmap()
+    output_path = f"page_{i + 1}.png"
+    pix.save(output_path)
+
+def batch_convert_pdf_to_images(pdf_path):
+  """Processes a PDF file in batches."""
+
+  num_processes = os.cpu_count()
+  chunk_size = 100
+
+  with fitz.open(pdf_path) as doc:
+    num_pages = doc.page_count
+
+    for start_page in range(0, num_pages, 100):
+      end_page = min(start_page + 100, num_pages)
+      args = [(doc, i, i + chunk_size) for i in range(start_page, end_page, chunk_size)]
+
+      with concurrent.futures.ProcessPoolExecutor(max_workers=num_processes) as executor:
+        futures = [executor.submit(convert_pdf_to_images, arg) for arg in args]
+        concurrent.futures.wait(futures)
+
+  print("All tasks completed.")
 
 
 def process_ocr(ocr_model, image, label, rapid_ocr=None, table_engine=None):
@@ -47,11 +69,12 @@ def sort_and_update_metadata(temp_output, width):
   return sorted_output
 
 
-def process_images(img_list, mydict, ocr_model, filename, rapid_ocr=None, table_engine=None):
+def process_images(total_pages, mydict, ocr_model, filename, rapid_ocr=None, table_engine=None):
   output, page_no = [], 0
   last_title, last_subheading = "", ""
-
-  for img_path in img_list:
+  image_paths = [f"page_{i + 1}.png"
+                 for i in range(0, total_pages)]
+  for img_path in image_paths:
     temp_output, page_no = [], page_no + 1
     bbox_labels = mydict[img_path]
     img = Image.open(img_path)
